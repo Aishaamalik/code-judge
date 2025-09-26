@@ -110,4 +110,62 @@ def halstead_metrics(code: str) -> dict:
         "effort": effort
     }
 
+def nesting_depth(code: str) -> dict:
+    """
+    Calculate the maximum nesting depth of the code.
+    Returns a dict with value, label, and status (good/poor).
+    """
+    max_depth = 0
+    current_depth = 0
+    for char in code:
+        if char in '{[(':
+            current_depth += 1
+            max_depth = max(max_depth, current_depth)
+        elif char in ')]}':
+            current_depth = max(0, current_depth - 1)
+    status = "good" if max_depth <= 3 else "poor"
+    return {"value": max_depth, "label": "Max Nesting Depth", "status": status}
+
+def function_count(code: str) -> dict:
+    """
+    Count the number of function/method definitions.
+    Returns a dict with value, label, and status (good/poor).
+    Heuristic: Look for 'def ', 'function ', 'func ', etc.
+    """
+    patterns = [r'\bdef\s+\w+', r'\bfunction\s+\w+', r'\bfunc\s+\w+', r'\bpublic\s+\w+\s*\(', r'\bprivate\s+\w+\s*\(']
+    count = 0
+    for pattern in patterns:
+        count += len(re.findall(pattern, code, re.IGNORECASE))
+    status = "good" if count <= 10 else "poor"
+    return {"value": count, "label": "Function Count", "status": status}
+
+def variable_count(code: str) -> dict:
+    """
+    Estimate the number of unique variables.
+    Returns a dict with value, label, and status (good/poor).
+    Heuristic: Find identifiers that are not keywords or functions.
+    """
+    # Simple heuristic: split by non-word chars, filter likely variables
+    words = re.findall(r'\b\w+\b', code)
+    keywords = {'if', 'else', 'for', 'while', 'def', 'class', 'import', 'from', 'return', 'print', 'int', 'str', 'float', 'bool', 'true', 'false', 'null', 'void', 'public', 'private', 'static', 'const', 'let', 'var', 'const', 'function', 'func'}
+    variables = set(word for word in words if word not in keywords and not word.isdigit())
+    count = len(variables)
+    status = "good" if count <= 20 else "poor"
+    return {"value": count, "label": "Unique Variables", "status": status}
+
+def code_duplication_percentage(code: str) -> dict:
+    """
+    Estimate code duplication percentage.
+    Returns a dict with value, label, and status (good/poor).
+    Simple heuristic: Count repeated lines.
+    """
+    lines = [line.strip() for line in code.split('\n') if line.strip()]
+    total_lines = len(lines)
+    if total_lines == 0:
+        return {"value": 0.0, "label": "Duplication %", "status": "good"}
+    unique_lines = len(set(lines))
+    duplication = ((total_lines - unique_lines) / total_lines) * 100
+    status = "good" if duplication <= 10 else "poor"
+    return {"value": duplication, "label": "Duplication %", "status": status}
+
 # Add more utility functions as needed for code analysis

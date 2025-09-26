@@ -8,9 +8,12 @@ import black
 from main import create_analysis_chain
 from utils import (
     flesch_kincaid_grade_level, cyclomatic_complexity, calculate_maintainability_index,
-    lines_of_code, comment_lines, detect_code_smells, halstead_metrics
+    lines_of_code, comment_lines, detect_code_smells, halstead_metrics,
+    nesting_depth, function_count, variable_count, code_duplication_percentage
 )
 from chat import create_chat_chain, send_message
+from analysis_export import export_to_pdf, export_to_json
+from code_comparison import compare_codes
 
 # Load environment variables
 load_dotenv()
@@ -81,7 +84,7 @@ if 'chat_chain' not in st.session_state:
     st.session_state.chat_chain = None
 
 # Sidebar navigation
-page = st.sidebar.radio("Navigate", ["Analyze & Input", "Format Code", "Chat", "History"])
+page = st.sidebar.radio("Navigate", ["Analyze & Input", "Format Code", "Chat", "History", "Code Comparison", "Multi-File Analysis", "GitHub Repo", "Settings"])
 
 # Main content
 if page == "Analyze & Input":
@@ -120,6 +123,14 @@ def hello_world():
                     mi = mi_dict['value']
                     fkgl_dict = flesch_kincaid_grade_level(code_input)
                     fkgl = fkgl_dict['value']
+                    nd_dict = nesting_depth(code_input)
+                    nd = nd_dict['value']
+                    fc_dict = function_count(code_input)
+                    fc = fc_dict['value']
+                    vc_dict = variable_count(code_input)
+                    vc = vc_dict['value']
+                    dup_dict = code_duplication_percentage(code_input)
+                    dup = dup_dict['value']
                     smells = detect_code_smells(code_input)
                     halstead = halstead_metrics(code_input)
 
@@ -154,7 +165,7 @@ def hello_world():
                             st.markdown("**Code Smells:** None detected ✅")
 
                     # Analysis results in tabs
-                    tab1, tab2, tab3, tab4, tab5 = st.tabs(["Language", "Errors", "Best Practices", "Security", "Refactoring"])
+                    tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10 = st.tabs(["Language", "Errors", "Best Practices", "Security", "Metrics", "Dependency", "Test Coverage", "Complexity", "Duplication", "Refactoring"])
                     result_str = result.content
 
                     def get_section(content, header):
@@ -176,6 +187,16 @@ def hello_world():
                     with tab4:
                         st.markdown(get_section(result_str, "### Security & Performance Concerns"))
                     with tab5:
+                        st.markdown(get_section(result_str, "### Code Metrics"))
+                    with tab6:
+                        st.markdown(get_section(result_str, "### Dependency Analysis"))
+                    with tab7:
+                        st.markdown(get_section(result_str, "### Test Coverage Estimation"))
+                    with tab8:
+                        st.markdown(get_section(result_str, "### Time/Space Complexity Estimation"))
+                    with tab9:
+                        st.markdown(get_section(result_str, "### Code Duplication Detection"))
+                    with tab10:
                         st.markdown(get_section(result_str, "### Refactoring Suggestions"))
                         st.markdown(get_section(result_str, "### Overall Suggestions"))
 
@@ -188,11 +209,23 @@ def hello_world():
                         scores = [int(score) for cat, score in confidences]
                         st.bar_chart({cat: score for cat, score in zip(categories, scores)})
 
+                    # Export options
+                    st.subheader("📤 Export Analysis")
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        if st.button("Export to PDF"):
+                            export_to_pdf(result_str, {"loc": loc_dict, "cc": cc_dict, "mi": mi_dict, "fkgl": fkgl_dict, "nd": nd_dict, "fc": fc_dict, "vc": vc_dict, "dup": dup_dict}, "analysis_report.pdf")
+                            st.success("PDF exported!")
+                    with col2:
+                        if st.button("Export to JSON"):
+                            export_to_json(result_str, {"loc": loc_dict, "cc": cc_dict, "mi": mi_dict, "fkgl": fkgl_dict, "nd": nd_dict, "fc": fc_dict, "vc": vc_dict, "dup": dup_dict}, "analysis_report.json")
+                            st.success("JSON exported!")
+
                     # Add to history
                     st.session_state.analysis_history.append({
                         "code": code_input,
                         "result": result_str,
-                        "metrics": {"loc": loc_dict, "cc": cc_dict, "mi": mi_dict, "fkgl": fkgl_dict}
+                        "metrics": {"loc": loc_dict, "cc": cc_dict, "mi": mi_dict, "fkgl": fkgl_dict, "nd": nd_dict, "fc": fc_dict, "vc": vc_dict, "dup": dup_dict}
                     })
                 except Exception as e:
                     st.error(f"An error occurred during analysis: {str(e)}")
@@ -276,6 +309,76 @@ elif page == "History":
                 st.markdown(f"**Metrics:** MI: {mi_val:.1f}%, Readability: {fkgl_val:.1f}")
     else:
         st.info("No history yet. Analyze some code to see it here.")
+
+elif page == "Code Comparison":
+    st.markdown('<div class="main-header">🔄 Code Comparison</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sub-header">Compare two code snippets side-by-side.</div>', unsafe_allow_html=True)
+
+    code1 = st.text_area("Code 1", height=200)
+    code2 = st.text_area("Code 2", height=200)
+
+    if st.button("Compare"):
+        if code1.strip() and code2.strip():
+            comp = compare_codes(code1, code2)
+            st.subheader("Diff")
+            st.code(comp['diff'])
+            st.subheader("Metrics Comparison")
+            import pandas as pd
+            data = []
+            for key in comp['metrics1']:
+                data.append({
+                    "Metric": comp['metrics1'][key]['label'],
+                    "Code 1": comp['metrics1'][key]['value'],
+                    "Code 2": comp['metrics2'][key]['value'],
+                    "Comparison": comp['comparison'][key]
+                })
+            df = pd.DataFrame(data)
+            st.table(df)
+        else:
+            st.warning("Please enter both code snippets.")
+
+elif page == "Multi-File Analysis":
+    st.markdown('<div class="main-header">📁 Multi-File Analysis</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sub-header">Upload multiple files for project-level analysis.</div>', unsafe_allow_html=True)
+
+    uploaded_files = st.file_uploader("Upload multiple files", accept_multiple_files=True)
+    if uploaded_files:
+        st.write(f"Uploaded {len(uploaded_files)} files.")
+        if st.button("Analyze All"):
+            all_results = []
+            for file in uploaded_files:
+                code = file.read().decode("utf-8")
+                result = chain.invoke({"code": code})
+                loc = lines_of_code(code)['value']
+                cc = cyclomatic_complexity(code)['value']
+                all_results.append({
+                    "file": file.name,
+                    "loc": loc,
+                    "cc": cc,
+                    "result": result.content
+                })
+            st.subheader("Summary")
+            for res in all_results:
+                st.write(f"**{res['file']}**: LOC {res['loc']}, CC {res['cc']}")
+
+elif page == "GitHub Repo":
+    st.markdown('<div class="main-header">🐙 GitHub Repo Analysis</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sub-header">Analyze a GitHub repository by URL.</div>', unsafe_allow_html=True)
+
+    repo_url = st.text_input("GitHub Repo URL")
+    if st.button("Analyze Repo"):
+        if repo_url:
+            st.info("GitHub analysis requires additional setup. Coming soon!")
+        else:
+            st.warning("Please enter a GitHub URL.")
+
+elif page == "Settings":
+    st.markdown('<div class="main-header">⚙️ Settings</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sub-header">Adjust AI parameters.</div>', unsafe_allow_html=True)
+
+    temperature = st.slider("Temperature", 0.0, 1.0, 0.1)
+    st.write(f"Current temperature: {temperature}")
+    st.info("Changes will apply on next analysis.")
 
 # Footer
 st.markdown('<div class="footer">Powered by Groq and LangChain. Version 1.0.0</div>', unsafe_allow_html=True)

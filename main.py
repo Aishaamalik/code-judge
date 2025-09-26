@@ -36,7 +36,7 @@ def create_prompt_template() -> PromptTemplate:
     """
     prompt_template = """
     You are an expert AI code judge. Analyze the following code snippet provided by the user in detail.
-    
+
     Instructions:
     1. Detect the programming language of the code (e.g., Python, JavaScript, Java, C++, etc.). If unclear, suggest the most likely one.
     2. Perform a comprehensive review:
@@ -46,7 +46,11 @@ def create_prompt_template() -> PromptTemplate:
        - Security and performance: Highlight any vulnerabilities (e.g., SQL injection, buffer overflows) or performance bottlenecks.
        - Code smells: Identify common code smells like long methods, high complexity, duplicate code, etc.
        - Refactoring suggestions: Provide specific refactoring ideas to improve structure, such as extracting methods, applying design patterns, or reducing duplication.
-       - Metrics analysis: Estimate or discuss key code metrics like cyclomatic complexity, maintainability index, lines of code, comment density, Halstead metrics (vocabulary, volume, difficulty), and readability (Flesch-Kincaid grade level). Suggest thresholds for good/bad values.
+       - Metrics analysis: Estimate or discuss key code metrics like cyclomatic complexity, maintainability index, lines of code, comment density, Halstead metrics (vocabulary, volume, difficulty), readability (Flesch-Kincaid grade level), nesting depth, function count, variable count, code duplication. Suggest thresholds for good/bad values.
+       - Dependency analysis: Identify potential external dependencies (libraries, frameworks) and suggest alternatives or security checks.
+       - Test coverage estimation: Estimate how well the code might be covered by unit tests and suggest areas needing more tests.
+       - Time/Space complexity estimation: Analyze algorithmic complexity where applicable (e.g., loops, recursion) and estimate Big O notation.
+       - Code duplication detection: Identify duplicated code blocks and suggest consolidation.
        - Suggestions: Provide specific, actionable fixes or refactored code examples where helpful.
     3. Structure your response with clear sections using Markdown formatting, emojis for visual appeal (✅ for no issues, ⚠️ for warnings, 🔴 for errors), bullet points, and tables where appropriate (e.g., for issues, metrics, and recommendations). Use the following exact headings:
        - ### Language Detected
@@ -56,9 +60,13 @@ def create_prompt_template() -> PromptTemplate:
        - ### Best Practices & Improvements
        - ### Security & Performance Concerns
        - ### Code Metrics
+       - ### Dependency Analysis
+       - ### Test Coverage Estimation
+       - ### Time/Space Complexity Estimation
+       - ### Code Duplication Detection
        - ### Refactoring Suggestions
        - ### Overall Suggestions
-    4. Provide confidence scores (0-100%) for each major section, e.g., "Syntax Analysis Confidence: 95%". Base scores on how clear the code is and your certainty. Suggest key metrics for visualization if possible (e.g., complexity score, maintainability).
+    4. Provide confidence scores (0-100%) for each major section, e.g., "Syntax Analysis Confidence: 95%". Base scores on how clear the code is and your certainty. Include confidence for new sections like "Dependency Analysis Confidence: 85%". Suggest key metrics for visualization if possible (e.g., complexity score, maintainability).
 
     Code to analyze:
     {code}
