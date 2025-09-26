@@ -80,6 +80,46 @@ def create_prompt_template() -> PromptTemplate:
     )
 
 
+def create_multi_file_prompt_template() -> PromptTemplate:
+    """
+    Creates a shorter PromptTemplate for multi-file analysis to reduce token usage.
+    
+    Returns:
+        PromptTemplate: A LangChain PromptTemplate object for code analysis.
+    """
+    prompt_template = """
+    You are an expert AI code judge. Analyze the following code snippet briefly for project-level insights.
+
+    Instructions:
+    1. Detect the programming language.
+    2. Perform a review:
+       - Syntax errors.
+       - Logical issues/bugs.
+       - Best practices & improvements.
+       - Security & performance concerns.
+       - Code smells.
+       - Key metrics: lines of code, cyclomatic complexity, maintainability index, readability.
+       - Refactoring suggestions.
+    3. Structure response with clear sections using Markdown, emojis. Use headings:
+       - ### Language Detected
+       - ### Syntax Errors
+       - ### Logical Issues/Bugs
+       - ### Best Practices & Improvements
+       - ### Security & Performance Concerns
+       - ### Code Metrics
+       - ### Refactoring Suggestions
+    4. Be concise, focus on actionable insights.
+
+    Code to analyze:
+    {code}
+
+    """
+    return PromptTemplate(
+        input_variables=["code"],
+        template=prompt_template,
+    )
+
+
 def create_analysis_chain():
     """
     Creates and returns the complete LLM analysis chain using the prompt template and initialized LLM.
@@ -90,4 +130,27 @@ def create_analysis_chain():
     llm = initialize_llm()
     prompt = create_prompt_template()
     
+    return prompt | llm
+
+
+def create_multi_file_analysis_chain(custom_prompt=None):
+    """
+    Creates and returns the multi-file analysis chain with optional custom prompt.
+    If custom_prompt is provided, uses it; otherwise, uses the default shorter prompt.
+
+    Args:
+        custom_prompt (str, optional): Custom prompt template string with {code} placeholder.
+
+    Returns:
+        RunnableSequence: A complete analysis chain ready for invocation.
+    """
+    llm = initialize_llm()
+    if custom_prompt:
+        prompt = PromptTemplate(
+            input_variables=[],
+            template=custom_prompt,
+        )
+    else:
+        prompt = create_multi_file_prompt_template()
+
     return prompt | llm

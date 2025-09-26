@@ -5,7 +5,8 @@ import tempfile
 import difflib
 from black import FileMode
 import black
-from main import create_analysis_chain
+from groq import APIStatusError
+from main import create_analysis_chain, create_multi_file_analysis_chain
 from utils import (
     flesch_kincaid_grade_level, cyclomatic_complexity, calculate_maintainability_index,
     lines_of_code, comment_lines, detect_code_smells, halstead_metrics,
@@ -342,24 +343,91 @@ elif page == "Multi-File Analysis":
     st.markdown('<div class="sub-header">Upload multiple files for project-level analysis.</div>', unsafe_allow_html=True)
 
     uploaded_files = st.file_uploader("Upload multiple files", accept_multiple_files=True)
+
     if uploaded_files:
         st.write(f"Uploaded {len(uploaded_files)} files.")
+
         if st.button("Analyze All"):
             all_results = []
+
+            # Loop through each file and perform detailed analysis
             for file in uploaded_files:
                 code = file.read().decode("utf-8")
-                result = chain.invoke({"code": code})
-                loc = lines_of_code(code)['value']
-                cc = cyclomatic_complexity(code)['value']
-                all_results.append({
-                    "file": file.name,
-                    "loc": loc,
-                    "cc": cc,
-                    "result": result.content
-                })
+                original_len = len(code)
+                if len(code) > 8000:
+                    code = code[:8000]
+                    st.warning(f"File {file.name} is too large ({original_len} characters). Analyzing only the first 8000 characters.")
+
+                # Escape curly braces in code to prevent them from being interpreted as template variables
+                escaped_code = code.replace('{', '{{').replace('}', '}}')
+
+                try:
+                    # Construct the prompt for detailed analysis
+                    prompt = f"""
+                    Please analyze the following Python code in detail. Provide the following insights:
+                    1. A general overview of the code structure (modularity, readability, and maintainability).
+                    2. Identify the cyclomatic complexity and potential areas for refactoring.
+                    3. Check for any coding best practices violations (e.g., long functions, deep nesting, code duplication).
+                    4. Highlight any code smells, such as repeated patterns, overly complex logic, or inefficient code.
+                    5. Assess performance implications (e.g., unnecessary computations, inefficient algorithms).
+
+                    If any issues are found, suggest improvements where applicable.
+
+                    Code:
+                    {escaped_code}
+                    """
+
+                    # Invoke multi-chain analysis with the constructed prompt
+                    multi_chain = create_multi_file_analysis_chain(custom_prompt=prompt)
+                    result = multi_chain.invoke({"code": code})
+
+                    # Collect detailed metrics
+                    loc = lines_of_code(code)['value']
+                    cc = cyclomatic_complexity(code)['value']
+                    comments = comment_lines(code)
+                    mi = calculate_maintainability_index(code, loc, comments)['value']  # Maintainability Index
+                    halstead = halstead_metrics(code)  # Halstead metrics
+                    nesting_depth_val = nesting_depth(code)['value']  # Nesting depth
+                    code_smells_list = detect_code_smells(code)  # Code smells
+
+                    # Append results for each file
+                    all_results.append({
+                        "file": file.name,
+                        "loc": loc,
+                        "cc": cc,
+                        "mi": mi,
+                        "halstead": halstead,
+                        "nesting_depth": nesting_depth_val,
+                        "code_smells": code_smells_list,
+                        "result": result.content
+                    })
+
+                except APIStatusError as e:
+                    st.error(f"Analysis failed for {file.name}: {str(e)}")
+                    continue
+
+            # Display summary of results
             st.subheader("Summary")
             for res in all_results:
-                st.write(f"**{res['file']}**: LOC {res['loc']}, CC {res['cc']}")
+                st.write(f"**{res['file']}**: LOC {res['loc']}, CC {res['cc']}, MI {res['mi']}")
+                st.write(f"Halstead Metrics: {res['halstead']}")
+                st.write(f"Nesting Depth: {res['nesting_depth']}")
+                st.write(f"Code Smells Detected: {len(res['code_smells'])}")
+                st.text_area(f"Detailed Analysis for {res['file']}", res['result'], height=200)
+
+                # Optionally, visualize the metrics
+                st.bar_chart({
+                    'LOC': res['loc'],
+                    'CC': res['cc'],
+                    'MI': res['mi'],
+                    'Nesting Depth': res['nesting_depth']
+                })
+
+                # Show a list of detected code smells
+                if res['code_smells']:
+                    st.write("Potential Code Smells:")
+                    for smell in res['code_smells']:
+                        st.write(f"- {smell}")
 
 elif page == "GitHub Repo":
     st.markdown('<div class="main-header">🐙 GitHub Repo Analysis</div>', unsafe_allow_html=True)
