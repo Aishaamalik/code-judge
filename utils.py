@@ -168,4 +168,35 @@ def code_duplication_percentage(code: str) -> dict:
     status = "good" if duplication <= 10 else "poor"
     return {"value": duplication, "label": "Duplication %", "status": status}
 
+def code_characters(code: str) -> dict:
+    """
+    Count the number of characters in the code.
+    Returns a dict with value, label, and status (good/poor).
+    """
+    value = len(code)
+    status = "good" if value < 10000 else "poor"
+    return {"value": value, "label": "Code Characters", "status": status}
+
+def code_comment_density(code: str) -> dict:
+    """
+    Calculate the comment density percentage.
+    Returns a dict with value, label, and status (good/poor).
+    """
+    loc = lines_of_code(code)['value']
+    comments = comment_lines(code)
+    value = (comments / loc) * 100 if loc > 0 else 0
+    status = "good" if value > 10 else "poor"
+    return {"value": value, "label": "Comment Density %", "status": status}
+
+def code_avg_function_length(code: str) -> dict:
+    """
+    Calculate the average lines per function.
+    Returns a dict with value, label, and status (good/poor).
+    """
+    loc = lines_of_code(code)['value']
+    fc = function_count(code)['value']
+    value = loc / max(1, fc)
+    status = "good" if value < 20 else "poor"
+    return {"value": value, "label": "Avg Lines per Function", "status": status}
+
 # Add more utility functions as needed for code analysis

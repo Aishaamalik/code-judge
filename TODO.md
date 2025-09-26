@@ -1,12 +1,11 @@
-# TODO: Make GitHub Repo and Settings Pages Functional
+# TODO: Add Code Dimensions to Analysis
 
 ## Steps to Complete
-- [x] Edit requirements.txt: Add 'PyGithub==2.4.0' for GitHub API access.
-- [x] Edit main.py: Add temperature parameter (default 0.1) to create_analysis_chain, create_multi_file_analysis_chain, and create_chat_chain; pass temperature to LLM in chain setup.
-- [x] Edit app.py: 
-  - [x] Initialize st.session_state.temperature = 0.1 if not present.
-  - [x] Update Settings page to set st.session_state.temperature from slider.
-  - [x] Move chain creations to use st.session_state.temperature dynamically.
-  - [x] Implement GitHub Repo page: Parse URL, fetch repo contents using PyGithub, filter code files, analyze each with metrics and AI chain, display results in expanders.
-- [x] Install new dependency: Run 'pip install -r requirements.txt'.
-- [ ] Test the app: Run 'streamlit run app.py', adjust settings, test analysis, and GitHub repo analysis with a sample URL.
+
+- [x] Add new metric functions to utils.py: code_characters, code_comment_density, code_avg_function_length
+- [x] Update main.py: Modify the prompt template to include new metrics (code characters, comment density, avg lines per function) in the instructions
+- [ ] Update app.py (Analyze & Input): Import new functions, calculate metrics, add to detailed metrics expander, include in export dict
+- [ ] Update app.py (Multi-File Analysis): Calculate and display new metrics for each file
+- [ ] Update app.py (GitHub Repo): Calculate and display new metrics for analyzed files
+- [ ] Update code_comparison.py: Add new metrics to the metrics comparison
+- [ ] Test the implementation: Run the app and verify new metrics are displayed and exported correctly

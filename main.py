@@ -49,7 +49,7 @@ def create_prompt_template() -> PromptTemplate:
        - Security and performance: Highlight any vulnerabilities (e.g., SQL injection, buffer overflows) or performance bottlenecks.
        - Code smells: Identify common code smells like long methods, high complexity, duplicate code, etc.
        - Refactoring suggestions: Provide specific refactoring ideas to improve structure, such as extracting methods, applying design patterns, or reducing duplication.
-       - Metrics analysis: Estimate or discuss key code metrics like cyclomatic complexity, maintainability index, lines of code, comment density, Halstead metrics (vocabulary, volume, difficulty), readability (Flesch-Kincaid grade level), nesting depth, function count, variable count, code duplication. Suggest thresholds for good/bad values.
+       - Metrics analysis: Estimate or discuss key code metrics like cyclomatic complexity, maintainability index, lines of code, code characters, comment density (as percentage), average lines per function, Halstead metrics (vocabulary, volume, difficulty), readability (Flesch-Kincaid grade level), nesting depth, function count, variable count, code duplication. Suggest thresholds for good/bad values.
        - Dependency analysis: Identify potential external dependencies (libraries, frameworks) and suggest alternatives or security checks.
        - Test coverage estimation: Estimate how well the code might be covered by unit tests and suggest areas needing more tests.
        - Time/Space complexity estimation: Analyze algorithmic complexity where applicable (e.g., loops, recursion) and estimate Big O notation.

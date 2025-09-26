@@ -10,7 +10,8 @@ from main import create_analysis_chain, create_multi_file_analysis_chain
 from utils import (
     flesch_kincaid_grade_level, cyclomatic_complexity, calculate_maintainability_index,
     lines_of_code, comment_lines, detect_code_smells, halstead_metrics,
-    nesting_depth, function_count, variable_count, code_duplication_percentage
+    nesting_depth, function_count, variable_count, code_duplication_percentage,
+    code_characters, code_comment_density, code_avg_function_length
 )
 from chat import create_chat_chain, send_message
 from analysis_export import export_to_pdf, export_to_json
@@ -135,6 +136,9 @@ def hello_world():
                     vc = vc_dict['value']
                     dup_dict = code_duplication_percentage(code_input)
                     dup = dup_dict['value']
+                    chars_dict = code_characters(code_input)
+                    cd_dict = code_comment_density(code_input)
+                    afl_dict = code_avg_function_length(code_input)
                     smells = detect_code_smells(code_input)
                     halstead = halstead_metrics(code_input)
 
@@ -161,6 +165,10 @@ def hello_world():
                         st.markdown(f"- Volume: {halstead['volume']:.2f}")
                         st.markdown(f"- Difficulty: {halstead['difficulty']:.2f}")
                         st.markdown(f"- Effort: {halstead['effort']:.2f}")
+                        st.markdown("**Code Dimensions:**")
+                        st.markdown(f"- {chars_dict['label']}: {chars_dict['value']}")
+                        st.markdown(f"- {cd_dict['label']}: {cd_dict['value']:.1f}%")
+                        st.markdown(f"- {afl_dict['label']}: {afl_dict['value']:.1f}")
                         if smells:
                             st.markdown("**Code Smells Detected:**")
                             for smell in smells:
@@ -218,18 +226,18 @@ def hello_world():
                     col1, col2 = st.columns(2)
                     with col1:
                         if st.button("Export to PDF"):
-                            export_to_pdf(result_str, {"loc": loc_dict, "cc": cc_dict, "mi": mi_dict, "fkgl": fkgl_dict, "nd": nd_dict, "fc": fc_dict, "vc": vc_dict, "dup": dup_dict}, "analysis_report.pdf")
+                            export_to_pdf(result_str, {"loc": loc_dict, "cc": cc_dict, "mi": mi_dict, "fkgl": fkgl_dict, "nd": nd_dict, "fc": fc_dict, "vc": vc_dict, "dup": dup_dict, "chars": chars_dict, "cd": cd_dict, "afl": afl_dict}, "analysis_report.pdf")
                             st.success("PDF exported!")
                     with col2:
                         if st.button("Export to JSON"):
-                            export_to_json(result_str, {"loc": loc_dict, "cc": cc_dict, "mi": mi_dict, "fkgl": fkgl_dict, "nd": nd_dict, "fc": fc_dict, "vc": vc_dict, "dup": dup_dict}, "analysis_report.json")
+                            export_to_json(result_str, {"loc": loc_dict, "cc": cc_dict, "mi": mi_dict, "fkgl": fkgl_dict, "nd": nd_dict, "fc": fc_dict, "vc": vc_dict, "dup": dup_dict, "chars": chars_dict, "cd": cd_dict, "afl": afl_dict}, "analysis_report.json")
                             st.success("JSON exported!")
 
                     # Add to history
                     st.session_state.analysis_history.append({
                         "code": code_input,
                         "result": result_str,
-                        "metrics": {"loc": loc_dict, "cc": cc_dict, "mi": mi_dict, "fkgl": fkgl_dict, "nd": nd_dict, "fc": fc_dict, "vc": vc_dict, "dup": dup_dict}
+                        "metrics": {"loc": loc_dict, "cc": cc_dict, "mi": mi_dict, "fkgl": fkgl_dict, "nd": nd_dict, "fc": fc_dict, "vc": vc_dict, "dup": dup_dict, "chars": chars_dict, "cd": cd_dict, "afl": afl_dict}
                     })
                 except Exception as e:
                     st.error(f"An error occurred during analysis: {str(e)}")
