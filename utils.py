@@ -1,41 +1,54 @@
 import re
 
-def flesch_kincaid_grade_level(text: str) -> float:
+def flesch_kincaid_grade_level(text: str) -> dict:
     """
     Calculate Flesch-Kincaid Grade Level for readability.
+    Returns a dict with value, label, and status (good/poor).
     """
     words = len(text.split())
     sentences = text.count('.') + text.count('!') + text.count('?') + 1  # +1 to avoid division by zero
     syllables = sum([len(re.findall(r'[aeiouy]+', word.lower())) for word in text.split()])
     if sentences == 0 or words == 0:
-        return 0.0
+        return {"value": 0.0, "label": "Readability Grade", "status": "neutral"}
     grade = 0.39 * (words / sentences) + 11.8 * (syllables / words) - 15.59
-    return max(0, grade)
+    grade = max(0, grade)
+    status = "good" if grade < 8 else "poor"
+    return {"value": grade, "label": "Readability Grade", "status": status}
 
-def cyclomatic_complexity(code: str) -> int:
+def cyclomatic_complexity(code: str) -> dict:
     """
     Simple estimate of cyclomatic complexity based on keywords.
+    Returns a dict with value, label, and status (good/poor).
     """
     keywords = ['if', 'for', 'while', 'elif', 'case', 'catch', '&&', '||']
-    return sum(code.lower().count(keyword) for keyword in keywords) + 1
+    value = sum(code.lower().count(keyword) for keyword in keywords) + 1
+    status = "good" if value <= 10 else "poor"
+    return {"value": value, "label": "Cyclomatic Complexity", "status": status}
 
-def calculate_maintainability_index(code: str, code_lines: int, comment_lines: int) -> float:
+def calculate_maintainability_index(code: str, code_lines: int, comment_lines: int) -> dict:
     """
     Calculate a simple maintainability index.
+    Returns a dict with value, label, and status (good/poor).
     """
     if code_lines == 0:
-        return 100.0
-    comment_density = comment_lines / code_lines
-    complexity_factor = cyclomatic_complexity(code) / 10
-    maintainability = 100 - (len(code) / 100) + (comment_density * 50) - complexity_factor
-    return max(0, min(100, maintainability))
+        value = 100.0
+    else:
+        comment_density = comment_lines / code_lines
+        complexity_factor = cyclomatic_complexity(code)['value'] / 10
+        value = 100 - (len(code) / 100) + (comment_density * 50) - complexity_factor
+        value = max(0, min(100, value))
+    status = "good" if value > 50 else "poor"
+    return {"value": value, "label": "Maintainability Index", "status": status}
 
-def lines_of_code(code: str) -> int:
+def lines_of_code(code: str) -> dict:
     """
     Count the number of lines of code, excluding empty lines.
+    Returns a dict with value, label, and status (good/poor).
     """
     lines = code.split('\n')
-    return len([line for line in lines if line.strip()])
+    value = len([line for line in lines if line.strip()])
+    status = "good" if value < 100 else "poor"
+    return {"value": value, "label": "Lines of Code", "status": status}
 
 def comment_lines(code: str) -> int:
     """
@@ -56,7 +69,7 @@ def detect_code_smells(code: str) -> list:
     smells = []
     if len(code) > 1000:
         smells.append("Long method/function - consider breaking into smaller functions")
-    if cyclomatic_complexity(code) > 10:
+    if cyclomatic_complexity(code)['value'] > 10:
         smells.append("High cyclomatic complexity - consider simplifying logic")
     if 'print(' in code and 'debug' not in code.lower():
         smells.append("Debug print statements left in code")
