@@ -11,3 +11,14 @@
 - [x] Test LLM initialization with sample code
 - [x] Test with sample code inputs (e.g., Python with syntax error, JavaScript, etc.) to ensure language detection and confidence scores work - LLM tested successfully, model updated
 - [x] If issues arise, debug and fix (e.g., API key loading, LLM responses) - Fixed decommissioned model error
+- [ ] Update requirements.txt with additional dependencies (e.g., black for code formatting)
+- [ ] Enhance utils.py with additional code metrics if needed
+- [ ] Implement chat.py with interactive chat functionality using LangChain
+- [ ] Update main.py: Enhance prompt for more detailed analysis including code metrics, code smells, refactoring
+- [ ] Integrate utils.py metrics calculation into main.py analysis
+- [ ] Add file upload feature in main.py for code files
+- [ ] Add interactive chat expander in main.py UI
+- [ ] Add code formatting suggestions feature
+- [ ] Add analysis history feature
+- [ ] Test enhanced app with new features
+- [ ] Update roadmap.py to match TODO.md
