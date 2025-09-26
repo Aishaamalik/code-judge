@@ -86,10 +86,10 @@ page = st.sidebar.radio("Navigate", ["Analyze & Input", "Format Code", "Chat", "
 # Main content
 if page == "Analyze & Input":
     st.markdown('<div class="main-header">🤖 AI Code Judge</div>', unsafe_allow_html=True)
-    st.markdown('<div class="sub-header">Enter or upload code for a comprehensive AI-powered review. Supports multiple languages!</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sub-header">Enter or upload code for a comprehensive AI-powered review. Supports AI-powered analysis for multiple programming languages; static metrics are estimates across languages.</div>', unsafe_allow_html=True)
 
     # File upload
-    uploaded_file = st.file_uploader("Upload a code file", type=['py', 'js', 'java', 'cpp', 'c', 'txt'])
+    uploaded_file = st.file_uploader("Upload a code file", type=['py', 'js', 'java', 'cpp', 'c', 'txt', 'rs', 'go', 'php', 'rb', 'swift', 'kt', 'ts', 'html', 'css', 'json', 'xml'])
     code_input = ""
     if uploaded_file is not None:
         code_input = uploaded_file.read().decode("utf-8")
@@ -201,7 +201,8 @@ def hello_world():
 
 elif page == "Format Code":
     st.markdown('<div class="main-header">🛠️ Code Formatter</div>', unsafe_allow_html=True)
-    st.markdown('<div class="sub-header">Format your Python code using Black for consistent style.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sub-header">Format your Python code using Black for consistent style. Note: This feature is Python-specific. For other languages, use dedicated tools like Prettier (JS), clang-format (C++), etc.</div>', unsafe_allow_html=True)
+    st.warning("⚠️ Code formatting is currently available only for Python. Upload or paste Python code below.")
 
     uploaded_file = st.file_uploader("Upload a Python file", type=['py'])
     code_input = ""

@@ -17,10 +17,11 @@ def flesch_kincaid_grade_level(text: str) -> dict:
 
 def cyclomatic_complexity(code: str) -> dict:
     """
-    Simple estimate of cyclomatic complexity based on keywords.
+    Simple estimate of cyclomatic complexity based on control flow keywords across languages.
     Returns a dict with value, label, and status (good/poor).
+    Note: This is a heuristic estimate; actual complexity may vary by language.
     """
-    keywords = ['if', 'for', 'while', 'elif', 'case', 'catch', '&&', '||']
+    keywords = ['if', 'for', 'while', 'elif', 'else', 'switch', 'case', 'match', 'when', 'try', 'except', 'catch', 'default', '&&', '||']
     value = sum(code.lower().count(keyword) for keyword in keywords) + 1
     status = "good" if value <= 10 else "poor"
     return {"value": value, "label": "Cyclomatic Complexity", "status": status}
@@ -52,29 +53,34 @@ def lines_of_code(code: str) -> dict:
 
 def comment_lines(code: str) -> int:
     """
-    Estimate the number of comment lines.
+    Estimate the number of comment lines across common programming languages.
+    Supports: # (Python, Ruby), // (C++, Java, JS), /* */ (C++, Java, JS), -- (SQL), ' (Haskell, Lisp), ; (Assembly, some scripting).
+    Note: This is a heuristic and may not cover all comment styles perfectly.
     """
     lines = code.split('\n')
     comment_count = 0
     for line in lines:
         stripped = line.strip()
-        if stripped.startswith('#') or stripped.startswith('//') or stripped.startswith('/*'):
+        if (stripped.startswith('#') or stripped.startswith('//') or stripped.startswith('/*') or
+            stripped.startswith('--') or stripped.startswith("'") or stripped.startswith(';')):
             comment_count += 1
     return comment_count
 
 def detect_code_smells(code: str) -> list:
     """
-    Simple detection of common code smells.
+    Simple detection of common code smells across languages.
     """
     smells = []
     if len(code) > 1000:
         smells.append("Long method/function - consider breaking into smaller functions")
     if cyclomatic_complexity(code)['value'] > 10:
         smells.append("High cyclomatic complexity - consider simplifying logic")
-    if 'print(' in code and 'debug' not in code.lower():
-        smells.append("Debug print statements left in code")
-    if 'TODO' in code.upper():
-        smells.append("TODO comments present - unfinished work")
+    debug_patterns = ['print(', 'console.log', 'System.out', 'printf', 'puts', 'log(']
+    has_debug = any(pattern in code for pattern in debug_patterns)
+    if has_debug and 'debug' not in code.lower():
+        smells.append("Potential debug/logging statements left in code (e.g., print, console.log)")
+    if 'TODO' in code.upper() or 'FIXME' in code.upper():
+        smells.append("TODO/FIXME comments present - unfinished work")
     return smells
 
 def halstead_metrics(code: str) -> dict:
