@@ -5,3 +5,4 @@ python-dotenv
 black
 pandas
 reportlab
+PyGithub==2.4.0

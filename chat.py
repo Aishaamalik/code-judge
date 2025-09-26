@@ -4,7 +4,7 @@ from langchain.chains import ConversationChain
 from langchain.memory import ConversationBufferMemory
 import os
 
-def create_chat_chain():
+def create_chat_chain(temperature: float = 0.7):
     """Create a conversation chain for chatting about code."""
     api_key = os.getenv("GROQ_API_KEY")
     if not api_key:
@@ -13,7 +13,7 @@ def create_chat_chain():
     llm = ChatGroq(
         groq_api_key=api_key,
         model_name="llama-3.1-8b-instant",
-        temperature=0.7,  # Higher temperature for conversational responses
+        temperature=temperature,  # Configurable temperature for conversational responses
     )
 
     # Create a prompt template for code-related conversations

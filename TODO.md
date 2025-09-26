@@ -1,17 +1,12 @@
-# TODO: Fix KeyError in Multi-File Analysis Prompt
+# TODO: Make GitHub Repo and Settings Pages Functional
 
-## Steps to Complete:
-
-1. **Edit app.py**: Add escaping for curly braces in the code before inserting into the custom_prompt in the "Multi-File Analysis" section.
-   - After reading and truncating the code, add `escaped_code = code.replace('{', '{{').replace('}', '}}')`.
-   - Update the prompt f-string to use `{escaped_code}` instead of `{code}`.
-   - This prevents LangChain from interpreting code's { } as template variables.
-   - ✅ Completed: Added escaping and updated prompt.
-
-2. **Test the Fix**: Run `streamlit run app.py` and test multi-file upload with a file containing curly braces (e.g., Python dicts). Verify no KeyError and analysis completes.
-   - ✅ Completed: Multi-file analysis runs successfully without KeyError, processes files with curly braces (e.g., dicts/JSON), and generates detailed output including metrics and suggestions.
-
-3. **Update TODO.md**: Mark steps as completed after verification.
-   - ✅ Completed: Updated with test results.
-
-4. **Complete Task**: Use attempt_completion once fixed and tested.
+## Steps to Complete
+- [x] Edit requirements.txt: Add 'PyGithub==2.4.0' for GitHub API access.
+- [x] Edit main.py: Add temperature parameter (default 0.1) to create_analysis_chain, create_multi_file_analysis_chain, and create_chat_chain; pass temperature to LLM in chain setup.
+- [x] Edit app.py: 
+  - [x] Initialize st.session_state.temperature = 0.1 if not present.
+  - [x] Update Settings page to set st.session_state.temperature from slider.
+  - [x] Move chain creations to use st.session_state.temperature dynamically.
+  - [x] Implement GitHub Repo page: Parse URL, fetch repo contents using PyGithub, filter code files, analyze each with metrics and AI chain, display results in expanders.
+- [x] Install new dependency: Run 'pip install -r requirements.txt'.
+- [ ] Test the app: Run 'streamlit run app.py', adjust settings, test analysis, and GitHub repo analysis with a sample URL.

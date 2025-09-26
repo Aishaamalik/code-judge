@@ -15,12 +15,12 @@ from utils import (
 from chat import create_chat_chain, send_message
 from analysis_export import export_to_pdf, export_to_json
 from code_comparison import compare_codes
+from github import Github
 
 # Load environment variables
 load_dotenv()
 
-# Initialize analysis chain
-chain = create_analysis_chain()
+
 
 # Page configuration for professional look
 st.set_page_config(
@@ -78,11 +78,13 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Session state for history and chat
+# Session state for history, chat, and settings
 if 'analysis_history' not in st.session_state:
     st.session_state.analysis_history = []
 if 'chat_chain' not in st.session_state:
     st.session_state.chat_chain = None
+if 'temperature' not in st.session_state:
+    st.session_state.temperature = 0.1
 
 # Sidebar navigation
 page = st.sidebar.radio("Navigate", ["Analyze & Input", "Format Code", "Chat", "History", "Code Comparison", "Multi-File Analysis", "GitHub Repo", "Settings"])
@@ -111,6 +113,7 @@ def hello_world():
         if code_input.strip():
             with st.spinner("Analyzing your code..."):
                 try:
+                    chain = create_analysis_chain(temperature=st.session_state.temperature)
                     result = chain.invoke({"code": code_input})
                     st.success("Analysis Complete!")
 
@@ -285,7 +288,7 @@ elif page == "Chat":
 
     if st.session_state.chat_chain is None:
         if st.button("🚀 Start Chat"):
-            st.session_state.chat_chain = create_chat_chain()
+            st.session_state.chat_chain = create_chat_chain(temperature=st.session_state.temperature)
             st.success("Chat initialized!")
             st.rerun()
     if st.session_state.chat_chain:
@@ -378,7 +381,7 @@ elif page == "Multi-File Analysis":
                     """
 
                     # Invoke multi-chain analysis with the constructed prompt
-                    multi_chain = create_multi_file_analysis_chain(custom_prompt=prompt)
+                    multi_chain = create_multi_file_analysis_chain(custom_prompt=prompt, temperature=st.session_state.temperature)
                     result = multi_chain.invoke({"code": code})
 
                     # Collect detailed metrics
@@ -436,7 +439,98 @@ elif page == "GitHub Repo":
     repo_url = st.text_input("GitHub Repo URL")
     if st.button("Analyze Repo"):
         if repo_url:
-            st.info("GitHub analysis requires additional setup. Coming soon!")
+            try:
+                from urllib.parse import urlparse
+                parsed = urlparse(repo_url)
+                path = parsed.path.strip('/')
+                if '/' not in path:
+                    st.error("Invalid GitHub URL. Please provide a URL like https://github.com/owner/repo")
+                else:
+                    owner, repo = path.split('/', 1)
+                    if '/' in repo:
+                        repo = repo.split('/')[0]  # in case of subpaths
+                    g = Github()
+                    repo_obj = g.get_repo(f"{owner}/{repo}")
+                    st.success(f"Analyzing repo: {repo_obj.full_name}")
+
+                    # Get contents of root directory
+                    contents = repo_obj.get_contents("")
+                    code_files = []
+                    for content in contents:
+                        if content.type == "file" and any(content.name.endswith(ext) for ext in ['.py', '.js', '.java', '.cpp', '.c', '.rs', '.go', '.php', '.rb', '.swift', '.kt', '.ts', '.html', '.css', '.json', '.xml']):
+                            code_files.append(content)
+
+                    if not code_files:
+                        st.warning("No code files found in the root directory.")
+                    else:
+                        st.write(f"Found {len(code_files)} code files. Analyzing up to 5 files.")
+
+                        # Analyze up to 5 files
+                        for i, file in enumerate(code_files[:5]):
+                            with st.expander(f"Analysis of {file.name}"):
+                                try:
+                                    code = file.decoded_content.decode('utf-8')
+                                    original_len = len(code)
+                                    if len(code) > 8000:
+                                        code = code[:8000]
+                                        st.warning(f"File {file.name} is too large ({original_len} characters). Analyzing only the first 8000 characters.")
+
+                                    # Calculate metrics
+                                    loc_dict = lines_of_code(code)
+                                    loc = loc_dict['value']
+                                    comments = comment_lines(code)
+                                    cc_dict = cyclomatic_complexity(code)
+                                    cc = cc_dict['value']
+                                    mi_dict = calculate_maintainability_index(code, loc, comments)
+                                    mi = mi_dict['value']
+                                    fkgl_dict = flesch_kincaid_grade_level(code)
+                                    fkgl = fkgl_dict['value']
+                                    smells = detect_code_smells(code)
+                                    halstead = halstead_metrics(code)
+
+                                    # Metrics display
+                                    col1, col2, col3, col4 = st.columns(4)
+                                    with col1:
+                                        status_class = "good-metric" if loc_dict['status'] == "good" else "poor-metric"
+                                        st.markdown(f'<div class="metric-card {status_class}"><strong>{loc_dict["label"]}</strong><br>{loc}</div>', unsafe_allow_html=True)
+                                    with col2:
+                                        status_class = "good-metric" if cc_dict['status'] == "good" else "poor-metric"
+                                        st.markdown(f'<div class="metric-card {status_class}"><strong>{cc_dict["label"]}</strong><br>{cc}</div>', unsafe_allow_html=True)
+                                    with col3:
+                                        status_class = "good-metric" if mi_dict['status'] == "good" else "poor-metric"
+                                        st.markdown(f'<div class="metric-card {status_class}"><strong>{mi_dict["label"]}</strong><br>{mi:.1f}%</div>', unsafe_allow_html=True)
+                                    with col4:
+                                        status_class = "good-metric" if fkgl_dict['status'] == "good" else "poor-metric"
+                                        st.markdown(f'<div class="metric-card {status_class}"><strong>{fkgl_dict["label"]}</strong><br>{fkgl:.1f}</div>', unsafe_allow_html=True)
+
+                                    # AI Analysis
+                                    chain = create_analysis_chain(temperature=st.session_state.temperature)
+                                    result = chain.invoke({"code": code})
+                                    result_str = result.content
+
+                                    # Display sections
+                                    def get_section(content, header):
+                                        start = content.find(header)
+                                        if start == -1:
+                                            return ""
+                                        next_header = content.find("###", start + 1)
+                                        if next_header == -1:
+                                            next_header = len(content)
+                                        return content[start:next_header].strip()
+
+                                    st.markdown(get_section(result_str, "### Language Detected"))
+                                    st.markdown(get_section(result_str, "### Syntax Errors"))
+                                    st.markdown(get_section(result_str, "### Logical Issues/Bugs"))
+                                    st.markdown(get_section(result_str, "### Best Practices & Improvements"))
+                                    st.markdown(get_section(result_str, "### Security & Performance Concerns"))
+                                    st.markdown(get_section(result_str, "### Code Metrics"))
+                                    st.markdown(get_section(result_str, "### Refactoring Suggestions"))
+
+                                except Exception as e:
+                                    st.error(f"Failed to analyze {file.name}: {str(e)}")
+
+            except Exception as e:
+                st.error(f"Error accessing repository: {str(e)}")
         else:
             st.warning("Please enter a GitHub URL.")
 
@@ -444,8 +538,8 @@ elif page == "Settings":
     st.markdown('<div class="main-header">⚙️ Settings</div>', unsafe_allow_html=True)
     st.markdown('<div class="sub-header">Adjust AI parameters.</div>', unsafe_allow_html=True)
 
-    temperature = st.slider("Temperature", 0.0, 1.0, 0.1)
-    st.write(f"Current temperature: {temperature}")
+    st.session_state.temperature = st.slider("Temperature", 0.0, 1.0, st.session_state.temperature)
+    st.write(f"Current temperature: {st.session_state.temperature}")
     st.info("Changes will apply on next analysis.")
 
 # Footer

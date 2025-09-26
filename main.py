@@ -6,24 +6,27 @@ from langchain_groq import ChatGroq
 # Load environment variables
 load_dotenv()
 
-def initialize_llm() -> ChatGroq:
+def initialize_llm(temperature: float = 0.1) -> ChatGroq:
     """
     Initializes the Groq Language Model with the provided API key and model configuration.
-    
+
+    Args:
+        temperature (float): Temperature for the LLM (0.0 to 1.0).
+
     Returns:
         ChatGroq: Initialized Groq LLM instance.
-    
+
     Raises:
         ValueError: If the API key is not found in the environment variables.
     """
     api_key = os.getenv("GROQ_API_KEY")
     if not api_key:
         raise ValueError("GROQ_API_KEY not found in .env file. Please ensure it's set.")
-    
+
     return ChatGroq(
         groq_api_key=api_key,
         model_name="llama-3.1-8b-instant",  # Updated to supported model
-        temperature=0.1,  # Low temperature for consistent, factual responses
+        temperature=temperature,  # Configurable temperature
     )
 
 
@@ -120,31 +123,35 @@ def create_multi_file_prompt_template() -> PromptTemplate:
     )
 
 
-def create_analysis_chain():
+def create_analysis_chain(temperature: float = 0.1):
     """
     Creates and returns the complete LLM analysis chain using the prompt template and initialized LLM.
-    
+
+    Args:
+        temperature (float): Temperature for the LLM (0.0 to 1.0).
+
     Returns:
         RunnableSequence: A complete analysis chain ready for invocation.
     """
-    llm = initialize_llm()
+    llm = initialize_llm(temperature)
     prompt = create_prompt_template()
-    
+
     return prompt | llm
 
 
-def create_multi_file_analysis_chain(custom_prompt=None):
+def create_multi_file_analysis_chain(custom_prompt=None, temperature: float = 0.1):
     """
     Creates and returns the multi-file analysis chain with optional custom prompt.
     If custom_prompt is provided, uses it; otherwise, uses the default shorter prompt.
 
     Args:
         custom_prompt (str, optional): Custom prompt template string with {code} placeholder.
+        temperature (float): Temperature for the LLM (0.0 to 1.0).
 
     Returns:
         RunnableSequence: A complete analysis chain ready for invocation.
     """
-    llm = initialize_llm()
+    llm = initialize_llm(temperature)
     if custom_prompt:
         prompt = PromptTemplate(
             input_variables=[],
